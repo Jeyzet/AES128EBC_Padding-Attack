@@ -1,0 +1,40 @@
+#!/usr/bin/env pyyhon
+#_*_ coding: utf8 _*_
+from urllib import parse
+from urllib import request
+import urllib.request as urllib2
+from html.parser import HTMLParser
+
+def main(input):
+	data = 'text_to_encrypt='+ input +'&do_encrypt=Encrypt' #Es el mensaje a cifrar, se envia como dato de la variable text_to_encrypt en el sitio
+	print("Dato Plano:--------> ", data)
+	f = data.encode('utf-8')
+	req = request.Request("http://167.71.246.232:8080/crypto.php", f) # Se conecta al server a través de la IP y puerto.
+	resp = request.urlopen(req).read().decode('utf-8')
+	class MyHTMLParser(HTMLParser): # Ordena la respuesta codigo HTML
+		def handle_data(self, data):
+			if len(data) > 25: # Si el dato es mayor a 25 digitos es el dato cifrado
+				f = open ('cifrado.txt','w') #Guarda el dato cifrado en un archivo
+				f.write(data)
+				f.close()
+	parser = MyHTMLParser()
+	parser.feed(resp)
+	f = open ('cifrado.txt','r')
+	mensaje = f.read() # Es el dato cifrado
+	f.close()
+	mensaje = mensaje[16:31] # Lee los digitos del 16 al 31 del mensaje cifrado. Para compara el segundo bloque
+	return mensaje
+
+if __name__ == '__main__':
+	flag = ""
+	while True:
+		payload = '0'*(31-len(flag)) #agrega 31 ceros (0), para luego utilizar el digito 32 como test con Chr.
+		hex = main(payload)
+		print("Dato cifrado a comparar:----------> ", hex)
+
+		for i in range(33, 126): # prueba los caracteres, letras etcs del 33 al 126.
+			if chr(i) != chr(38): # excepciona & que genera problemas con el Post en el mensaje.
+				if main(payload + flag + chr(i)) == hex: # si el dato cifrado 32 es igual al mensaje por defecto. El 32 es la letra.
+					flag += chr(i)
+					print("Flag: ", flag)
+					break
